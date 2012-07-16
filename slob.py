@@ -84,7 +84,7 @@ if __name__ == "__main__":
         if len(sys.argv) != 4:
             print_usage('t')
         else:
-            do_track(sys.argv[2:])
+            do_track(sys.argv[2], sys.argv[3])
 
     elif sys.argv[1] == 'init' or sys.argv[1] == 'i':
         init()
