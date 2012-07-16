@@ -56,6 +56,26 @@ def insert_log(logtype, logtext):
     conn.close()
 
 
+def print_info(obj_id):
+    conn = sqlite3.connect(dbpath)
+    c = conn.cursor()
+
+    select_sql = """
+    SELECT io.id, io.path, keys.keyword FROM infob AS io
+    LEFT JOIN keyword_infob AS ki on io.id  = ki.iid 
+    LEFT JOIN keyword AS keys on keys.id = ki.kid
+    WHERE io.obj_id=?
+    """
+
+    c.execute(select_sql, (obj_id,))
+
+    for row in c:
+        print(obj_id+': '+row[1])
+
+    conn.close()
+
+
+
 def print_usage(p='a'):
     usage = {}
     usage['t'] = 'track|t  <file path> <unique id>'
@@ -86,13 +106,20 @@ if __name__ == "__main__":
         else:
             do_track(sys.argv[2], sys.argv[3])
 
-    elif sys.argv[1] == 'init' or sys.argv[1] == 'i':
-        init()
     elif sys.argv[1] == 'log' or sys.argv[1] == 'l':
         if len(sys.argv) != 3:
             print_usage('l')
         else:
             insert_log(sys.argv[2])
+
+    elif sys.argv[1] == 'info' or sys.argv[1] == 'i':
+        if len(sys.argv) != 3:
+            print_usage('i')
+        else:
+            print_info(sys.argv[2])
+
+    elif sys.argv[1] == 'init':
+        init()
     else:
         print_usage()
 
