@@ -80,6 +80,7 @@ def print_info(obj_id):
 
         i += 1
 
+    print()
     conn.close()
 
 
