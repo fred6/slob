@@ -113,10 +113,11 @@ def modify_info(obj_id, change, ks):
 
             sql = 'DELETE FROM keyword_infob WHERE iid=? and kid=?'
             c.execute(sql, (iid, kres[0]))
-        
 
+        
     conn.commit()
     conn.close()
+    print_info(obj_id)
 
 
 
