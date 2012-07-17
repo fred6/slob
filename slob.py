@@ -10,14 +10,14 @@ def init():
       obj_id text UNIQUE,
       path text);
 
-    CREATE TABLE keyword (
+    CREATE TABLE tag (
       id integer primary key autoincrement,
-      keyword text);
+      tag text);
 
-    CREATE TABLE keyword_infob (
+    CREATE TABLE tag_infob (
       iid int,
-      kid int,
-      PRIMARY KEY(iid, kid));
+      tid int,
+      PRIMARY KEY(iid, tid));
 
     CREATE TABLE log_entry (
       id integer primary key autoincrement,
@@ -61,9 +61,9 @@ def print_info(obj_id):
     c = conn.cursor()
 
     select_sql = """
-    SELECT io.id, io.path, keys.keyword FROM infob io
-    LEFT JOIN keyword_infob ki on io.id  = ki.iid 
-    LEFT JOIN keyword keys on keys.id = ki.kid
+    SELECT io.id, io.path, tag.tag FROM infob io
+    LEFT JOIN tag_infob ti on io.id  = ti.iid 
+    LEFT JOIN tag on tag.id = ti.tid
     WHERE io.obj_id=?
     """
 
@@ -80,35 +80,36 @@ def print_info(obj_id):
     conn.close()
 
 
-def modify_info(obj_id, change, ks):
+def modify_info(obj_id, change, tags):
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
     sql = 'SELECT id FROM infob WHERE obj_id=?'
     c.execute(sql, (obj_id,))
-    iid = (c.fetchone())[0]
+    fetch = c.fetchone()
+    iid = fetch[0]
 
     if change == '+':
-        for k in ks:
-            sql = 'SELECT * FROM keyword WHERE keyword=?'
-            c.execute(sql, (k,))
-            kres = c.fetchone()
+        for tag in tags:
+            sql = 'SELECT * FROM tag WHERE tag=?'
+            c.execute(sql, (tag,))
+            tres = c.fetchone()
 
-            # if the keyword aint in the table, add it
-            if kres == None:
-                sql = 'INSERT INTO keyword (keyword) VALUES (?)'
-                c.execute(sql, (k,))
+            # if the tag aint in the table, add it
+            if tres == None:
+                sql = 'INSERT INTO tag (tag) VALUES (?)'
+                c.execute(sql, (tag,))
 
-            sql = 'INSERT INTO keyword_infob (iid, kid) VALUES (?, ?)'
+            sql = 'INSERT INTO tag_infob (iid, tid) VALUES (?, ?)'
             c.execute(sql, (iid, c.lastrowid))
     else:
-        for k in ks:
-            sql = 'SELECT * FROM keyword WHERE keyword=?'
-            c.execute(sql, (k,))
-            kres = c.fetchone()
+        for tag in tags:
+            sql = 'SELECT * FROM tag WHERE tag=?'
+            c.execute(sql, (tag,))
+            tres = c.fetchone()
 
-            sql = 'DELETE FROM keyword_infob WHERE iid=? and kid=?'
-            c.execute(sql, (iid, kres[0]))
+            sql = 'DELETE FROM tag_infob WHERE iid=? and tid=?'
+            c.execute(sql, (iid, tres[0]))
 
         
     conn.commit()
@@ -125,11 +126,11 @@ def dump():
     for row in c:
         print(row)
 
-    c.execute('SELECT * FROM keyword')
+    c.execute('SELECT * FROM tag')
     for row in c:
         print(row)
 
-    c.execute('SELECT * FROM keyword_infob')
+    c.execute('SELECT * FROM tag_infob')
     for row in c:
         print(row)
 
@@ -140,7 +141,7 @@ def print_usage(p='a'):
     usage['t'] = 'track|t  <file path> <unique id>'
     usage['v'] = 'view|v   <unique id>'
     usage['l'] = 'log|l    <text>'
-    usage['l'] = 'info|i   [<+|-> <keyword>]'
+    usage['l'] = 'info|i   [<+|-> <tag>]'
     usage['a'] = ['slob.py <command> [<args>]\n\nCommands/options:',
                  '\n    '+usage['t'],
                  '\n    '+usage['v'],
