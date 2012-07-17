@@ -69,8 +69,16 @@ def print_info(obj_id):
 
     c.execute(select_sql, (obj_id,))
 
+    i = 0
     for row in c:
-        print(obj_id+': '+row[1])
+        if i == 0:
+            print(obj_id+': '+row[1])
+            print('==========')
+
+        if row[2] != None:
+            print(row[2]+' ', end='')
+
+        i += 1
 
     conn.close()
 
