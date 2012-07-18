@@ -136,9 +136,12 @@ def modify_info(obj_id, command, **kwargs):
             if tres == None:
                 sql = 'INSERT INTO tag (tag) VALUES (?)'
                 c.execute(sql, (tag,))
+                tid = c.lastrowid
+            else:
+                tid = tres[0]
 
             sql = 'INSERT INTO tag_infob (iid, tid) VALUES (?, ?)'
-            c.execute(sql, (iid, c.lastrowid))
+            c.execute(sql, (iid, tid))
     elif command == 't-':
         for tag in kwargs['tags']:
             sql = 'SELECT * FROM tag WHERE tag=?'
