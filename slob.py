@@ -108,7 +108,6 @@ def print_info(obj_id):
     c.execute(select_sql, (obj_id,))
 
     rows = c.fetchall()
-    print(rows)
 
     print(obj_id+': '+rows[0][1])
     print('==========')
