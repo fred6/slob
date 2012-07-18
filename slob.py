@@ -59,11 +59,19 @@ def do_track(fpath, uid, **kwargs):
 
     insert_log('auto', 'Started tracking '+fpath+' as '+uid)
 
+# take in  partial obj_id, return iid (after user prompting) or None
 def match_partial_obj_id(cursor, obj_id):
     sql = 'SELECT id, obj_id FROM infob WHERE obj_id LIKE ?'
     cursor.execute(sql, ('%'+obj_id+'%',))
 
-    return c.fetchall()
+    poss = c.fetchall()
+
+    if len(poss) > 0:
+        print(' '.join([p[1] for p in poss]))
+        sel = int(input('>>> '))
+        return poss[sel][0]
+    else:
+        return None
 
 
 def insert_log(logtype, logtext):
@@ -74,14 +82,9 @@ def insert_log(logtype, logtext):
 
     # only autocomplete/reference 1 for the moment. want to test.
     if m != []:
-        possibles = match_partial_obj_id(c, m[0])
+        ref_iid = match_partial_obj_id(c, m[0])
 
-        if len(possibles) > 0:
-            print(' '.join([p[1] for p in possibles]))
-            sel = int(input('>>> '))
-
-            ref_iid = possibles[sel][0]
-
+        if ref_iid != None:
             # replace the bracketed stuff with the IID
             logtext.replace('[['+m[0]+']]', '[['+ref_iid+']]')            
 
