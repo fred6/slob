@@ -52,12 +52,18 @@ def do_track(fpath, uid, **kwargs):
     c.execute(sql, (uid, fpath))
 
     if kwargs.get('tags') != None:
-        add_tags_to_infob(conn, c.lastrowid, kwargs['tags'])
+        add_tags_to_infob(c, c.lastrowid, kwargs['tags'])
 
     conn.commit()
     conn.close()
 
     insert_log('auto', 'Started tracking '+fpath+' as '+uid)
+
+def match_partial_obj_id(cursor, obj_id):
+    sql = 'SELECT id, obj_id FROM infob WHERE obj_id LIKE ?'
+    cursor.execute(sql, ('%'+obj_id+'%',))
+
+    return c.fetchall()
 
 
 def insert_log(logtype, logtext):
@@ -68,9 +74,7 @@ def insert_log(logtype, logtext):
 
     # only autocomplete/reference 1 for the moment. want to test.
     if m != []:
-        sql = 'SELECT id, obj_id FROM infob WHERE obj_id LIKE ?'
-        c.execute(sql, ('%'+m[0]+'%',))
-        possibles = c.fetchall()
+        possibles = match_partial_obj_id(c, m[0])
 
         if len(possibles) > 0:
             print(' '.join([p[1] for p in possibles]))
@@ -123,9 +127,7 @@ def print_info(obj_id):
     conn.close()
 
 
-def add_tags_to_infob(conn, iid, tags):
-    c = conn.cursor()
-
+def add_tags_to_infob(c, iid, tags):
     for tag in tags:
         sql = 'SELECT * FROM tag WHERE tag=?'
         c.execute(sql, (tag,))
@@ -153,7 +155,7 @@ def modify_info(obj_id, command, **kwargs):
     iid = fetch[0]
 
     if command == 't+':
-        add_tags_to_infob(conn, iid, kwargs['tags'])
+        add_tags_to_infob(c, iid, kwargs['tags'])
     elif command == 't-':
         for tag in kwargs['tags']:
             sql = 'SELECT * FROM tag WHERE tag=?'
