@@ -92,6 +92,9 @@ def print_info(obj_id):
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
+    # we should not require the full obj_id, but should do a lookup on partials as well.
+    # whenever we require an obj_id passed in from command line, run the autocompleter
+
     select_sql = """
     SELECT io.id, io.path, tag.tag FROM infob io
     LEFT JOIN tag_infob ti on io.id  = ti.iid 
