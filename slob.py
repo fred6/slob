@@ -207,7 +207,7 @@ if __name__ == "__main__":
 
     elif sys.argv[1] == 'info' or sys.argv[1] == 'i':
         if len(sys.argv) != 3:
-            if len(sys.argv) > 4 and (sys.argv[3] == '+' or sys.argv[3] == '-'):
+            if len(sys.argv) > 4 and (sys.argv[3] == 't+' or sys.argv[3] == 't-'):
                 modify_info(sys.argv[2], sys.argv[3], sys.argv[4:])
             else:
                 print_usage('i')
