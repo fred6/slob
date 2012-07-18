@@ -72,7 +72,8 @@ def insert_log(logtype, logtext):
 
             ref_iid = possibles[sel][0]
 
-            # replace the bracketed stuff with possibles[sel][1]
+            # replace the bracketed stuff with the IID
+            logtext.replace('[['+m[0]+']]', '[['+ref_iid+']]')            
 
             sql = 'INSERT INTO log_entry (type, timestamp, entry) VALUES (?, ?, ?)'
             c.execute(sql, (logtype, round(time.time()), logtext))
@@ -117,7 +118,7 @@ def print_info(obj_id):
     conn.close()
 
 
-def modify_info(obj_id, change, tags):
+def modify_info(obj_id, command, **kwargs):
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
@@ -126,8 +127,8 @@ def modify_info(obj_id, change, tags):
     fetch = c.fetchone()
     iid = fetch[0]
 
-    if change == '+':
-        for tag in tags:
+    if command == 't+':
+        for tag in kwargs['tags']:
             sql = 'SELECT * FROM tag WHERE tag=?'
             c.execute(sql, (tag,))
             tres = c.fetchone()
@@ -139,14 +140,21 @@ def modify_info(obj_id, change, tags):
 
             sql = 'INSERT INTO tag_infob (iid, tid) VALUES (?, ?)'
             c.execute(sql, (iid, c.lastrowid))
-    else:
-        for tag in tags:
+    elif command == 't-':
+        for tag in kwargs['tags']:
             sql = 'SELECT * FROM tag WHERE tag=?'
             c.execute(sql, (tag,))
             tres = c.fetchone()
 
             sql = 'DELETE FROM tag_infob WHERE iid=? and tid=?'
             c.execute(sql, (iid, tres[0]))
+
+    else:
+        print(kwargs['new_obj_id'])
+        sql = 'UPDATE infob SET obj_id=? WHERE id=?'
+        c.execute(sql, (kwargs['new_obj_id'], iid))
+        # so ugly
+        obj_id = kwargs['new_obj_id']
 
         
     conn.commit()
@@ -207,8 +215,10 @@ if __name__ == "__main__":
 
     elif sys.argv[1] == 'info' or sys.argv[1] == 'i':
         if len(sys.argv) != 3:
-            if len(sys.argv) > 4 and (sys.argv[3] == 't+' or sys.argv[3] == 't-'):
-                modify_info(sys.argv[2], sys.argv[3], sys.argv[4:])
+            if len(sys.argv) > 4 and (sys.argv[3] in ['t+', 't-']):
+                modify_info(sys.argv[2], sys.argv[3], tags=sys.argv[4:])
+            elif len(sys.argv) > 4 and sys.argv[3] == 'c':
+                modify_info(sys.argv[2], sys.argv[3], new_obj_id=sys.argv[4])
             else:
                 print_usage('i')
         else:
