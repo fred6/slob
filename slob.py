@@ -44,7 +44,6 @@ def do_track(fpath, uid, **kwargs):
     # if that fails because the id wasnt unique, prompt for a unique one?
     # or you could just error for now
 
-    # should be able to add keywords upon track initialization
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
     sql = 'INSERT INTO infob (obj_id, path) VALUES (?, ?)'
@@ -117,10 +116,7 @@ def print_info(obj_id):
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
-    # we should not require the full obj_id, but should do a lookup on partials as well.
-    # whenever we require an obj_id passed in from command line, run the autocompleter
     ref_iid = match_partial_obj_id(c, obj_id)
-
 
     if ref_iid != None:
         select_sql = """
