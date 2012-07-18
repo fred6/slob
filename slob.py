@@ -67,10 +67,13 @@ def match_partial_obj_id(cursor, obj_id):
     poss = cursor.fetchall()
 
     if len(poss) > 0:
-        print('Possible matches:')
-        print('   '.join(['('+str(p[0])+') '+p[1] for p in poss]))
-        sel = int(input('>>> '))
-        return sel
+        if len(poss) == 1 and poss[0][1] == obj_id:
+            return poss[0][0]
+        else:
+            print('Possible matches:')
+            print('   '.join(['('+str(p[0])+') '+p[1] for p in poss]))
+            sel = int(input('>>> '))
+            return sel
     else:
         return None
 
