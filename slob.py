@@ -53,13 +53,12 @@ def do_track(fpath, uid):
     insert_log('auto', 'Started tracking '+fpath+' as '+uid)
 
 def insert_log(logtype, logtext):
-    # if we have [[blah]]'s in the entry, we  want to query to ensure that theyre right, and if not provide options (auto-complete) for selecting the right one
-    # im thinking, for any simple text inside [[ ]], just do select from where obj_id LIKE %blah%
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
     m = re.findall('\[\[([A-Za-z0-9_ ]+)\]\]', logtext)
 
+    # only autocomplete/reference 1 for the moment. want to test.
     if m != []:
         sql = 'SELECT id, obj_id FROM infob WHERE obj_id LIKE ?'
         c.execute(sql, ('%'+m[0]+'%',))
