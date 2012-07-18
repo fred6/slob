@@ -64,12 +64,13 @@ def match_partial_obj_id(cursor, obj_id):
     sql = 'SELECT id, obj_id FROM infob WHERE obj_id LIKE ?'
     cursor.execute(sql, ('%'+obj_id+'%',))
 
-    poss = c.fetchall()
+    poss = cursor.fetchall()
 
     if len(poss) > 0:
-        print(' '.join([p[1] for p in poss]))
+        print('Possible matches:')
+        print('   '.join(['('+str(p[0])+') '+p[1] for p in poss]))
         sel = int(input('>>> '))
-        return poss[sel][0]
+        return sel
     else:
         return None
 
@@ -110,15 +111,16 @@ def print_info(obj_id):
 
     # we should not require the full obj_id, but should do a lookup on partials as well.
     # whenever we require an obj_id passed in from command line, run the autocompleter
+    ref_iid = match_partial_obj_id(c, obj_id)
 
     select_sql = """
     SELECT io.id, io.path, tag.tag FROM infob io
     LEFT JOIN tag_infob ti on io.id  = ti.iid 
     LEFT JOIN tag on tag.id = ti.tid
-    WHERE io.obj_id=?
+    WHERE io.id=?
     """
 
-    c.execute(select_sql, (obj_id,))
+    c.execute(select_sql, (ref_iid,))
 
     rows = c.fetchall()
 
