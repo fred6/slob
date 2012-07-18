@@ -38,7 +38,7 @@ def init():
     
 
 
-def do_track(fpath, uid):
+def do_track(fpath, uid, **kwargs):
     # check if the path is legit somehow
     # if so, try to insert.
     # if that fails because the id wasnt unique, prompt for a unique one?
@@ -46,13 +46,19 @@ def do_track(fpath, uid):
 
     # should be able to add keywords upon track initialization
     conn = sqlite3.connect(dbpath)
-    insert_sql = 'INSERT INTO infob (obj_id, path) VALUES (?, ?)'
+    c = conn.cursor()
+    sql = 'INSERT INTO infob (obj_id, path) VALUES (?, ?)'
 
-    conn.execute(insert_sql, (uid, fpath))
+    c.execute(sql, (uid, fpath))
+
+    if kwargs.get('tags') != None:
+        add_tags_to_infob(conn, c.lastrowid, kwargs['tags'])
+
     conn.commit()
     conn.close()
 
     insert_log('auto', 'Started tracking '+fpath+' as '+uid)
+
 
 def insert_log(logtype, logtext):
     conn = sqlite3.connect(dbpath)
@@ -117,6 +123,26 @@ def print_info(obj_id):
     conn.close()
 
 
+def add_tags_to_infob(conn, iid, tags):
+    c = conn.cursor()
+
+    for tag in tags:
+        sql = 'SELECT * FROM tag WHERE tag=?'
+        c.execute(sql, (tag,))
+        tres = c.fetchone()
+
+        # if the tag aint in the table, add it
+        if tres == None:
+            sql = 'INSERT INTO tag (tag) VALUES (?)'
+            c.execute(sql, (tag,))
+            tid = c.lastrowid
+        else:
+            tid = tres[0]
+
+        sql = 'INSERT INTO tag_infob (iid, tid) VALUES (?, ?)'
+        c.execute(sql, (iid, tid))
+
+
 def modify_info(obj_id, command, **kwargs):
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
@@ -127,21 +153,7 @@ def modify_info(obj_id, command, **kwargs):
     iid = fetch[0]
 
     if command == 't+':
-        for tag in kwargs['tags']:
-            sql = 'SELECT * FROM tag WHERE tag=?'
-            c.execute(sql, (tag,))
-            tres = c.fetchone()
-
-            # if the tag aint in the table, add it
-            if tres == None:
-                sql = 'INSERT INTO tag (tag) VALUES (?)'
-                c.execute(sql, (tag,))
-                tid = c.lastrowid
-            else:
-                tid = tres[0]
-
-            sql = 'INSERT INTO tag_infob (iid, tid) VALUES (?, ?)'
-            c.execute(sql, (iid, tid))
+        add_tags_to_infob(conn, iid, kwargs['tags'])
     elif command == 't-':
         for tag in kwargs['tags']:
             sql = 'SELECT * FROM tag WHERE tag=?'
@@ -204,10 +216,12 @@ if __name__ == "__main__":
             do_view(sys.argv[2])
 
     elif sys.argv[1] == 'track' or sys.argv[1] == 't':
-        if len(sys.argv) != 4:
-            print_usage('t')
-        else:
+        if len(sys.argv) == 4:
             do_track(sys.argv[2], sys.argv[3])
+        elif len(sys.argv) > 4:
+            do_track(sys.argv[2], sys.argv[3], tags=sys.argv[4:])
+        else:
+            print_usage('t')
 
     elif sys.argv[1] == 'log' or sys.argv[1] == 'l':
         if len(sys.argv) != 3:
