@@ -182,7 +182,7 @@ def print_usage(p='a'):
     usage['t'] = 'track|t  <file path> <unique id>'
     usage['v'] = 'view|v   <unique id>'
     usage['l'] = 'log|l    <text>'
-    usage['l'] = 'info|i   [<+|-> <tag>]'
+    usage['i'] = 'info|i   [<+|-> <tag>]'
     usage['a'] = ['slob.py <command> [<args>]\n\nCommands/options:',
                  '\n    '+usage['t'],
                  '\n    '+usage['v'],
