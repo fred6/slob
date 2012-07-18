@@ -19,10 +19,10 @@ def init():
       tid int,
       PRIMARY KEY(iid, tid));
 
-    CREATE TABLE infob_log (
+    CREATE TABLE tag_log (
       lid int,
-      iid int,
-      PRIMARY KEY(lid, iid));
+      tid int,
+      PRIMARY KEY(lid, tid));
 
     CREATE TABLE log_entry (
       id integer primary key autoincrement,
@@ -55,35 +55,29 @@ def do_track(fpath, uid):
 def insert_log(logtype, logtext):
     # if we have [[blah]]'s in the entry, we  want to query to ensure that theyre right, and if not provide options (auto-complete) for selecting the right one
     # im thinking, for any simple text inside [[ ]], just do select from where obj_id LIKE %blah%
+    m = re.findall('\[\[([A-Za-z0-9_ ]+)\]\]', logtext)
+
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
-    m = re.findall('\[\[([A-Za-z0-9_ ]+)\]\]', logtext)
+    sql = 'INSERT INTO log_entry (type, timestamp, entry) VALUES (?, ?, ?)'
+    c.execute(sql, (logtype, round(time.time()), logtext))
+
+    lid = c.lastrowid()
 
     if m != []:
-        sql = 'SELECT id, obj_id FROM infob WHERE obj_id LIKE ?'
+        sql = 'SELECT obj_id FROM infob WHERE obj_id LIKE ?'
         c.execute(sql, ('%'+m[0]+'%',))
         possibles = c.fetchall()
 
         if len(possibles) > 0:
-            print(' '.join([p[1] for p in possibles]))
-            sel = int(input('>>> '))
+            print(' '.join([p[0] for p in possibles]))
+            i = input('>>> ')
+            ref_iid = int(i)
 
-            ref_iid = possibles[sel][0]
-
-            # replace the bracketed stuff with possibles[sel][1]
-
-            sql = 'INSERT INTO log_entry (type, timestamp, entry) VALUES (?, ?, ?)'
-            c.execute(sql, (logtype, round(time.time()), logtext))
-            lid = c.lastrowid
-
-
-            sql = 'INSERT INTO infob_log (lid, iid) VALUES (?, ?)'
+            sql = 'INSERT INTO tag_log (lid, tid) VALUES (?, ?)'
             c.execute(sql, (lid, ref_iid))
 
-    else:
-        sql = 'INSERT INTO log_entry (type, timestamp, entry) VALUES (?, ?, ?)'
-        c.execute(sql, (logtype, round(time.time()), logtext))
 
     conn.commit()
     conn.close()
@@ -155,14 +149,18 @@ def dump():
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
-    tables = ['infob', 'tag', 'tag_infob', 'log_entry', 'infob_log']
+    c.execute('SELECT * FROM infob')
+    for row in c:
+        print(row)
 
-    for table in tables:
-        print('\n'+table+'\n==================')
-        c.execute('SELECT * FROM '+table)
-        for row in c:
-            print(row)
-            
+    c.execute('SELECT * FROM tag')
+    for row in c:
+        print(row)
+
+    c.execute('SELECT * FROM tag_infob')
+    for row in c:
+        print(row)
+
 
 
 def print_usage(p='a'):
