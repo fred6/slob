@@ -71,9 +71,14 @@ def match_partial_obj_id(cursor, obj_id):
             return poss[0][0]
         else:
             print('Possible matches:')
-            print('   '.join(['('+str(p[0])+') '+p[1] for p in poss]))
+            print('   '.join(['('+str(p[0])+') '+p[1] for p in poss]), end='')
+            print('   (0) [None]')
             sel = int(input('>>> '))
-            return sel
+
+            if sel != 0:
+                return sel
+            else:
+                return None
     else:
         return None
 
@@ -116,22 +121,25 @@ def print_info(obj_id):
     # whenever we require an obj_id passed in from command line, run the autocompleter
     ref_iid = match_partial_obj_id(c, obj_id)
 
-    select_sql = """
-    SELECT io.id, io.path, tag.tag FROM infob io
-    LEFT JOIN tag_infob ti on io.id  = ti.iid 
-    LEFT JOIN tag on tag.id = ti.tid
-    WHERE io.id=?
-    """
 
-    c.execute(select_sql, (ref_iid,))
+    if ref_iid != None:
+        select_sql = """
+        SELECT io.id, io.path, tag.tag FROM infob io
+        LEFT JOIN tag_infob ti on io.id  = ti.iid 
+        LEFT JOIN tag on tag.id = ti.tid
+        WHERE io.id=?
+        """
 
-    rows = c.fetchall()
+        c.execute(select_sql, (ref_iid,))
 
-    print(obj_id+': '+rows[0][1])
-    print('==========')
+        rows = c.fetchall()
 
-    print(', '.join([row[2] for row in rows if row[2] != None]))
-    print()
+        print(obj_id+': '+rows[0][1])
+        print('==========')
+
+        print(', '.join([row[2] for row in rows if row[2] != None]))
+        print()
+
     conn.close()
 
 
