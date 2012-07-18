@@ -43,6 +43,8 @@ def do_track(fpath, uid):
     # if so, try to insert.
     # if that fails because the id wasnt unique, prompt for a unique one?
     # or you could just error for now
+
+    # should be able to add keywords upon track initialization
     conn = sqlite3.connect(dbpath)
     insert_sql = 'INSERT INTO infob (obj_id, path) VALUES (?, ?)'
 
