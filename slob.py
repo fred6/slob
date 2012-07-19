@@ -205,58 +205,96 @@ def dump():
             
 
 
-def print_usage(p='a'):
-    usage = {}
-    usage['t'] = 'track|t  <file path> <unique id>'
-    usage['v'] = 'view|v   <unique id>'
-    usage['l'] = 'log|l    <text>'
-    usage['i'] = 'info|i   [<+|-> <tag>]'
-    usage['a'] = ['slob.py <command> [<args>]\n\nCommands/options:',
-                 '\n    '+usage['t'],
-                 '\n    '+usage['v'],
-                 '\n    '+usage['l']]
-    usage['a'] = ''.join(usage['a'])
+class commandParseException(Exception):
+    def __init__(self, value):
+        self.value = value
 
-    print(usage[p])
+
+class commandHandler:
+    def __init__(self, cmd):
+        commands = [['track', 't'],
+                    ['log', 'l'],
+                    ['info', 'i'],
+                    ['init'],
+                    ['dump']]
+
+        self.command = None
+
+        for c in commands:
+            canon = c[0]
+            for ceq in c:
+                if cmd == ceq:
+                    self.command = canon
+
+    
+    def parse_args(self, args):
+        if self.command == None:
+            raise commandParseException("aint no command brah")
+        elif self.command == 'track':
+            self.parse_track(args)
+        elif self.command == 'log':
+            self.parse_log(args)
+        elif self.command == 'info':
+            self.parse_info(args)
+        elif self.command == 'init':
+            self.parse_init(args)
+        elif self.command == 'dump':
+            self.parse_dump(args)
+
+    def parse_track(self, args):
+        print(args)
+        if len(args) == 2:
+            do_track(args[0], args[1])
+        elif len(args) > 2:
+            do_track(args[0], args[1], tags=args[2:])
+        else:
+            raise commandParseException('track arguments not valid')
+        
+    def parse_log(self, args):
+        if len(args) == 1:
+            insert_log('manual', args[1])
+        else:
+            raise commandParseException('log arguments not valid')
+        
+    def parse_info(self, args):
+        if len(args) != 1:
+            if len(args) > 2 and (args[1] in ['t+', 't-']):
+                modify_info(args[0], args[1], tags=args[2:])
+            elif len(args) > 2 and args[1] == 'c':
+                modify_info(args[0], args[1], new_alias=args[2])
+            else:
+                raise commandParseException('info arguments not valid')
+        else:
+            print_info(args[0])
+
+    def parse_init(self, args):
+        init()
+
+    def parse_dump(self, args):
+        dump()
+
+
+def print_usage():
+    usage = {}
+    usage['t']    = 'track | t  <file path> <alias> [<keyword>...]'
+    usage['v']    = 'view | v   <unique id>'
+    usage['l']    = 'log | l    <text>'
+    usage['i']    = 'info | i   [t+ | t- <tag>...] [c <new alias>]'
+    usage['init'] = 'init'
+    usage['dump'] = 'dump'
+    begin_str = '\nslob.py <command> [<args>]\n\nCommands/options:\n   ' 
+    print(begin_str + '\n   '.join([l for l in usage.values()]))
+
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         print_usage()
 
-    elif sys.argv[1] == 'view' or sys.argv[1] == 'v':
-        if len(sys.argv) != 3:
-            print_usage('v')
-        else:
-            do_view(sys.argv[2])
-
-    elif sys.argv[1] == 'track' or sys.argv[1] == 't':
-        if len(sys.argv) == 4:
-            do_track(sys.argv[2], sys.argv[3])
-        elif len(sys.argv) > 4:
-            do_track(sys.argv[2], sys.argv[3], tags=sys.argv[4:])
-        else:
-            print_usage('t')
-
-    elif sys.argv[1] == 'log' or sys.argv[1] == 'l':
-        if len(sys.argv) != 3:
-            print_usage('l')
-        else:
-            insert_log('manual', sys.argv[2])
-
-    elif sys.argv[1] == 'info' or sys.argv[1] == 'i':
-        if len(sys.argv) != 3:
-            if len(sys.argv) > 4 and (sys.argv[3] in ['t+', 't-']):
-                modify_info(sys.argv[2], sys.argv[3], tags=sys.argv[4:])
-            elif len(sys.argv) > 4 and sys.argv[3] == 'c':
-                modify_info(sys.argv[2], sys.argv[3], new_alias=sys.argv[4])
-            else:
-                print_usage('i')
-        else:
-            print_info(sys.argv[2])
-
-    elif sys.argv[1] == 'init':
-        init()
-    elif sys.argv[1] == 'dump':
-        dump()
     else:
-        print_usage()
+        ch = commandHandler(sys.argv[1])
+        try:
+            ch.parse_args(sys.argv[2:])
+        except commandParseException as e:
+            print(e.value)
+            print_usage()
+
