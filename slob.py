@@ -112,11 +112,14 @@ def insert_log(logtype, logtext):
     conn.close()
 
 
-def print_info(alias):
+def print_info(alias, **kwargs):
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
-    ref_iid = match_partial_alias(c, alias)
+    if kwargs.get('iid') != None:
+        ref_iid = kwargs['iid']
+    else:
+        ref_iid = match_partial_alias(c, alias)
 
     if ref_iid != None:
         select_sql = """
@@ -161,33 +164,33 @@ def modify_info(alias, command, **kwargs):
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
-    sql = 'SELECT id FROM infob WHERE alias=?'
-    c.execute(sql, (alias,))
-    fetch = c.fetchone()
-    iid = fetch[0]
+    iid = match_partial_alias(c, alias)
 
-    if command == 't+':
-        add_tags_to_infob(c, iid, kwargs['tags'])
-    elif command == 't-':
-        for tag in kwargs['tags']:
-            sql = 'SELECT * FROM tag WHERE tag=?'
-            c.execute(sql, (tag,))
-            tres = c.fetchone()
+    if iid != None:
+        if command == 't+':
+            add_tags_to_infob(c, iid, kwargs['tags'])
+        elif command == 't-':
+            for tag in kwargs['tags']:
+                sql = 'SELECT * FROM tag WHERE tag=?'
+                c.execute(sql, (tag,))
+                tres = c.fetchone()
 
-            sql = 'DELETE FROM tag_infob WHERE iid=? and tid=?'
-            c.execute(sql, (iid, tres[0]))
+                sql = 'DELETE FROM tag_infob WHERE iid=? and tid=?'
+                c.execute(sql, (iid, tres[0]))
 
+        else:
+            print(kwargs['new_alias'])
+            sql = 'UPDATE infob SET alias=? WHERE id=?'
+            c.execute(sql, (kwargs['new_alias'], iid))
+            # so ugly
+            alias = kwargs['new_alias']
+
+        conn.commit()
     else:
-        print(kwargs['new_alias'])
-        sql = 'UPDATE infob SET alias=? WHERE id=?'
-        c.execute(sql, (kwargs['new_alias'], iid))
-        # so ugly
-        alias = kwargs['new_alias']
+        pass
 
-        
-    conn.commit()
     conn.close()
-    print_info(alias)
+    print_info(alias, iid=iid)
 
 
 
