@@ -7,7 +7,7 @@ def init():
     init_sql = """
     CREATE TABLE infob (
       id integer primary key autoincrement,
-      obj_id text UNIQUE,
+      alias text UNIQUE,
       path text);
 
     CREATE TABLE tag (
@@ -46,7 +46,7 @@ def do_track(fpath, uid, **kwargs):
 
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
-    sql = 'INSERT INTO infob (obj_id, path) VALUES (?, ?)'
+    sql = 'INSERT INTO infob (alias, path) VALUES (?, ?)'
 
     c.execute(sql, (uid, fpath))
 
@@ -58,15 +58,15 @@ def do_track(fpath, uid, **kwargs):
 
     insert_log('auto', 'Started tracking '+fpath+' as '+uid)
 
-# take in  partial obj_id, return iid (after user prompting) or None
-def match_partial_obj_id(cursor, obj_id):
-    sql = 'SELECT id, obj_id FROM infob WHERE obj_id LIKE ?'
-    cursor.execute(sql, ('%'+obj_id+'%',))
+# take in  partial alias, return iid (after user prompting) or None
+def match_partial_alias(cursor, alias):
+    sql = 'SELECT id, alias FROM infob WHERE alias LIKE ?'
+    cursor.execute(sql, ('%'+alias+'%',))
 
     poss = cursor.fetchall()
 
     if len(poss) > 0:
-        if len(poss) == 1 and poss[0][1] == obj_id:
+        if len(poss) == 1 and poss[0][1] == alias:
             return poss[0][0]
         else:
             print('Possible matches:')
@@ -90,7 +90,7 @@ def insert_log(logtype, logtext):
 
     # only autocomplete/reference 1 for the moment. want to test.
     if m != []:
-        ref_iid = match_partial_obj_id(c, m[0])
+        ref_iid = match_partial_alias(c, m[0])
 
         if ref_iid != None:
             # replace the bracketed stuff with the IID
@@ -112,11 +112,11 @@ def insert_log(logtype, logtext):
     conn.close()
 
 
-def print_info(obj_id):
+def print_info(alias):
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
-    ref_iid = match_partial_obj_id(c, obj_id)
+    ref_iid = match_partial_alias(c, alias)
 
     if ref_iid != None:
         select_sql = """
@@ -130,7 +130,7 @@ def print_info(obj_id):
 
         rows = c.fetchall()
 
-        print(obj_id+': '+rows[0][1])
+        print(alias+': '+rows[0][1])
         print('==========')
 
         print(', '.join([row[2] for row in rows if row[2] != None]))
@@ -157,12 +157,12 @@ def add_tags_to_infob(c, iid, tags):
         c.execute(sql, (iid, tid))
 
 
-def modify_info(obj_id, command, **kwargs):
+def modify_info(alias, command, **kwargs):
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
-    sql = 'SELECT id FROM infob WHERE obj_id=?'
-    c.execute(sql, (obj_id,))
+    sql = 'SELECT id FROM infob WHERE alias=?'
+    c.execute(sql, (alias,))
     fetch = c.fetchone()
     iid = fetch[0]
 
@@ -178,16 +178,16 @@ def modify_info(obj_id, command, **kwargs):
             c.execute(sql, (iid, tres[0]))
 
     else:
-        print(kwargs['new_obj_id'])
-        sql = 'UPDATE infob SET obj_id=? WHERE id=?'
-        c.execute(sql, (kwargs['new_obj_id'], iid))
+        print(kwargs['new_alias'])
+        sql = 'UPDATE infob SET alias=? WHERE id=?'
+        c.execute(sql, (kwargs['new_alias'], iid))
         # so ugly
-        obj_id = kwargs['new_obj_id']
+        alias = kwargs['new_alias']
 
         
     conn.commit()
     conn.close()
-    print_info(obj_id)
+    print_info(alias)
 
 
 
@@ -248,7 +248,7 @@ if __name__ == "__main__":
             if len(sys.argv) > 4 and (sys.argv[3] in ['t+', 't-']):
                 modify_info(sys.argv[2], sys.argv[3], tags=sys.argv[4:])
             elif len(sys.argv) > 4 and sys.argv[3] == 'c':
-                modify_info(sys.argv[2], sys.argv[3], new_obj_id=sys.argv[4])
+                modify_info(sys.argv[2], sys.argv[3], new_alias=sys.argv[4])
             else:
                 print_usage('i')
         else:
