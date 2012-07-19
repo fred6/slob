@@ -255,7 +255,7 @@ class commandHandler:
         
     def parse_log(self, args):
         if len(args) == 1:
-            insert_log('manual', args[1])
+            insert_log('manual', args[0])
         else:
             raise commandParseException('log arguments not valid')
         
