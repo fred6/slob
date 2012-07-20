@@ -193,6 +193,17 @@ def modify_info(alias, command, **kwargs):
     print_info(alias, iid=iid)
 
 
+def query_objects(criteria):
+    conn = sqlite3.connect(dbpath)
+    c = conn.cursor()
+
+    sql = 'SELECT * FROM infob WHERE alias LIKE ? or path LIKE ?'
+    percents = '%'+criteria+'%'
+
+    for row in c.execute(sql, (percents, percents)):
+       print_info(row[1], iid=row[0])
+
+
 
 def dump():
     conn = sqlite3.connect(dbpath)
@@ -218,6 +229,7 @@ class commandHandler:
         commands = [['track', 't'],
                     ['log', 'l'],
                     ['info', 'i'],
+                    ['query', 'q'],
                     ['init'],
                     ['dump']]
 
@@ -239,6 +251,8 @@ class commandHandler:
             self.parse_log(args)
         elif self.command == 'info':
             self.parse_info(args)
+        elif self.command == 'query':
+            self.parse_query(args)
         elif self.command == 'init':
             self.parse_init(args)
         elif self.command == 'dump':
@@ -270,6 +284,13 @@ class commandHandler:
         else:
             print_info(args[0])
 
+    def parse_query(self, args):
+        if len(args) != 2 or args[0] != 'o':
+            raise commandParseException('query arguments not valid')
+        else:
+            query_objects(args[1])
+
+
     def parse_init(self, args):
         init()
 
@@ -283,6 +304,7 @@ def print_usage():
     usage['v']    = 'view | v   <unique id>'
     usage['l']    = 'log | l    <text>'
     usage['i']    = 'info | i   [t+ | t- <tag>...] [c <new alias>]'
+    usage['q']    = 'query | q  o <text>'
     usage['init'] = 'init'
     usage['dump'] = 'dump'
     begin_str = '\nslob.py <command> [<args>]\n\nCommands/options:\n   ' 
