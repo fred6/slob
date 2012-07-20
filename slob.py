@@ -201,8 +201,33 @@ def query_objects(criteria):
     percents = '%'+criteria+'%'
 
     for row in c.execute(sql, (percents, percents)):
-       print_info(row[1], iid=row[0])
+        print_info(row[1], iid=row[0])
 
+    conn.close()
+
+
+def query_tags(criteria):
+    # we just do one tag only for now. eventually should be able to filter by many
+    # also, need to be able to differentiate between exact and partial searching. right now we search partial by default
+    conn = sqlite3.connect(dbpath)
+    c = conn.cursor()
+
+    sql = """
+    SELECT infob.id, infob.alias FROM tag
+    LEFT JOIN tag_infob ti on tag.id = ti.tid
+    LEFT JOIN infob on infob.id = ti.iid
+    WHERE tag LIKE ?
+    """
+
+    percents = '%'+criteria+'%'
+
+    iids = []
+    for row in c.execute(sql, (percents,)):
+        if row[0] not in iids:
+            print_info(row[1], iid=row[0])
+            iids.append(row[0])
+
+    conn.close()
 
 
 def dump():
@@ -285,10 +310,14 @@ class commandHandler:
             print_info(args[0])
 
     def parse_query(self, args):
-        if len(args) != 2 or args[0] != 'o':
+        if len(args) != 2 or args[0] not in ['o', 't']:
             raise commandParseException('query arguments not valid')
         else:
-            query_objects(args[1])
+            if args[0] == 'o':
+                query_objects(args[1])
+            elif args[0] == 't':
+                query_tags(args[1])
+
 
 
     def parse_init(self, args):
