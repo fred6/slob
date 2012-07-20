@@ -69,10 +69,12 @@ def match_partial_alias(cursor, alias):
         if len(poss) == 1 and poss[0][1] == alias:
             return poss[0][0]
         else:
-            print('Possible matches:')
-            print('   '.join(['('+str(p[0])+') '+p[1] for p in poss]), end='')
-            print('   (0) [None]')
-            sel = int(input('>>> '))
+            sel = None
+            while sel != 0 and sel not in [p[0] for p in poss]:
+                print('Possible matches:')
+                print('   '.join(['('+str(p[0])+') '+p[1] for p in poss]), end='')
+                print('   (0) [None]')
+                sel = int(input('>>> '))
 
             if sel != 0:
                 return sel
