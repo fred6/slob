@@ -123,7 +123,7 @@ def print_info(alias, **kwargs):
 
     if ref_iid != None:
         select_sql = """
-        SELECT io.id, io.path, tag.tag FROM infob io
+        SELECT io.alias, io.path, tag.tag FROM infob io
         LEFT JOIN tag_infob ti on io.id  = ti.iid 
         LEFT JOIN tag on tag.id = ti.tid
         WHERE io.id=?
@@ -133,7 +133,7 @@ def print_info(alias, **kwargs):
 
         rows = c.fetchall()
 
-        print(alias+': '+rows[0][1])
+        print(rows[0][0]+': '+rows[0][1])
         print('==========')
 
         print(', '.join([row[2] for row in rows if row[2] != None]))
