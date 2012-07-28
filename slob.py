@@ -253,6 +253,30 @@ def query_logs(criteria):
 
     conn.close()
 
+def query_logs_alias(criteria):
+    # only allow one search criterion for now. however we can search in two ways:
+    # 1) search for entries containing that text.
+    # 2) search for entries referencing this partial alias
+    # 3) date ranges too!
+
+    # let's do 2 for now.
+    conn = sqlite3.connect(dbpath)
+    c = conn.cursor()
+
+    sql = """SELECT timestamp, entry FROM log_entry 
+    LEFT JOIN infob_log ON infob_log.lid = log_entry.id
+    LEFT JOIN infob ON infob.id = infob_log.iid
+    WHERE infob.alias LIKE ?"""
+    percents = '%'+criteria+'%'
+
+    for row in c.execute(sql, (percents,)):
+        print(datetime.datetime.fromtimestamp(row[0]).isoformat())
+        print('---------------------')
+        print(row[1])
+        print()
+
+    conn.close()
+
 def dump():
     conn = sqlite3.connect(dbpath)
     c = conn.cursor()
@@ -333,7 +357,7 @@ class commandHandler:
             print_info(args[0])
 
     def parse_query(self, args):
-        if len(args) != 2 or args[0] not in ['o', 't', 'l']:
+        if len(args) != 2 or args[0] not in ['o', 't', 'l', 'la']:
             raise commandParseException('query arguments not valid')
         else:
             if args[0] == 'o':
@@ -342,6 +366,8 @@ class commandHandler:
                 query_tags(args[1])
             elif args[0] == 'l':
                 query_logs(args[1])
+            elif args[0] == 'la':
+                query_logs_alias(args[1])
 
 
 
@@ -354,11 +380,11 @@ class commandHandler:
 
 def print_usage():
     usage = {}
-    usage['t']    = 'track | t  <file path> <alias> [<keyword>...]'
-    usage['v']    = 'view | v   <unique id>'
-    usage['l']    = 'log | l    <text>'
-    usage['i']    = 'info | i   [t+ | t- <tag>...] [c <new alias>]'
-    usage['q']    = 'query | q  o <text>'
+    usage['t']    = 't  <file path> <alias> [<keyword>...]'
+    usage['v']    = 'v   <unique id>'
+    usage['l']    = 'l    <text>'
+    usage['i']    = 'i   [t+ | t- <tag>...] [c <new alias>]'
+    usage['q']    = 'q  [o | t | l | la] <text>'
     usage['init'] = 'init'
     usage['dump'] = 'dump'
     begin_str = '\nslob.py <command> [<args>]\n\nCommands/options:\n   ' 
