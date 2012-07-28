@@ -96,7 +96,9 @@ def insert_log(logtype, logtext):
 
         if ref_iid != None:
             # replace the bracketed stuff with the IID
-            logtext.replace('[['+m[0]+']]', '[['+str(ref_iid)+']]')            
+            partialstr = '[['+m[0]+']]'
+            iidstr = '[['+str(ref_iid)+']]'
+            logtext = logtext.replace(partialstr, iidstr)
 
             sql = 'INSERT INTO log_entry (type, timestamp, entry) VALUES (?, ?, ?)'
             c.execute(sql, (logtype, round(time.time()), logtext))
