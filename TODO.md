@@ -1,0 +1,2 @@
+ - more than one alias ref'd in a log entry
+ - add tags from log entry. syntax: *tag here*.
