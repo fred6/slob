@@ -328,18 +328,9 @@ class commandHandler:
     def parse_args(self, args):
         if self.command == None:
             raise commandParseException("aint no command brah")
-        elif self.command == 'track':
-            self.parse_track(args)
-        elif self.command == 'log':
-            self.parse_log(args)
-        elif self.command == 'info':
-            self.parse_info(args)
-        elif self.command == 'query':
-            self.parse_query(args)
-        elif self.command == 'init':
-            self.parse_init(args)
-        elif self.command == 'dump':
-            self.parse_dump(args)
+        else:
+            getattr(self, "parse_"+self.command)(args)
+
 
     def parse_track(self, args):
         print(args)
