@@ -92,21 +92,30 @@ def insert_log(logtype, logtext):
 
     # only autocomplete/reference 1 for the moment. want to test.
     if m != []:
-        ref_iid = match_partial_alias(c, m[0])
+        ref_iids = []
+        abort = False
 
-        if ref_iid != None:
-            # replace the bracketed stuff with the IID
-            partialstr = '[['+m[0]+']]'
-            iidstr = '[['+str(ref_iid)+']]'
-            logtext = logtext.replace(partialstr, iidstr)
+        for match in m:
+            ref_iid = match_partial_alias(c, match)
 
+            if ref_iid != None:
+                ref_iids.append(ref_iid)
+                # replace the bracketed stuff with the IID
+                partialstr = '[['+match+']]'
+                iidstr = '[['+str(ref_iid)+']]'
+                logtext = logtext.replace(partialstr, iidstr, 1)
+            else:
+                abort = True
+
+        if not abort:
             sql = 'INSERT INTO log_entry (type, timestamp, entry) VALUES (?, ?, ?)'
             c.execute(sql, (logtype, round(time.time()), logtext))
             lid = c.lastrowid
 
 
-            sql = 'INSERT INTO infob_log (lid, iid) VALUES (?, ?)'
-            c.execute(sql, (lid, ref_iid))
+            for ref_iid in ref_iids:
+                sql = 'INSERT INTO infob_log (lid, iid) VALUES (?, ?)'
+                c.execute(sql, (lid, ref_iid))
 
     else:
         sql = 'INSERT INTO log_entry (type, timestamp, entry) VALUES (?, ?, ?)'
