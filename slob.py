@@ -269,6 +269,22 @@ def query_logs_alias(criteria):
         print(row[1])
         print()
 
+def query_logs_history(length=5):
+    # only allow one search criterion for now. however we can search in two ways:
+    # 1) search for entries containing that text.
+    # 2) search for entries referencing this partial alias
+    # 3) date ranges too!
+
+    # let's do 2 for now.
+    c = conn.cursor()
+
+    sql = 'SELECT timestamp, entry FROM log_entry ORDER BY timestamp DESC LIMIT ?'
+
+    for row in c.execute(sql, (length,)):
+        print(datetime.datetime.fromtimestamp(row[0]).isoformat())
+        print('---------------------')
+        print(row[1])
+        print()
 
 def dump():
     c = conn.cursor()
@@ -340,7 +356,7 @@ class commandHandler:
             print_info(args[0])
 
     def parse_query(self, args):
-        if len(args) != 2 or args[0] not in ['o', 't', 'l', 'la']:
+        if len(args) not in [1, 2] or args[0] not in ['o', 't', 'l', 'la', 'lh']:
             raise commandParseException('query arguments not valid')
         else:
             if args[0] == 'o':
@@ -351,6 +367,11 @@ class commandHandler:
                 query_logs(args[1])
             elif args[0] == 'la':
                 query_logs_alias(args[1])
+            elif args[0] == 'lh':
+                if len(args) == 2:
+                    query_logs_history(args[1])
+                else:
+                    query_logs_history()
 
 
 
@@ -367,7 +388,7 @@ def print_usage():
     usage['v']    = 'v   <unique id>'
     usage['l']    = 'l    <text>'
     usage['i']    = 'i   [t+ | t- <tag>...] [c <new alias>]'
-    usage['q']    = 'q  [o | t | l | la] <text>'
+    usage['q']    = 'q  [o | t | l | la | lh] <text>'
     usage['init'] = 'init'
     usage['dump'] = 'dump'
     begin_str = '\nslob.py <command> [<args>]\n\nCommands/options:\n   ' 
