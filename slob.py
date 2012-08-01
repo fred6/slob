@@ -1,9 +1,8 @@
 import sys, sqlite3, time, datetime, re
 
-dbpath = 'slob.sqlite'
+conn = None
 
 def init():
-    conn = sqlite3.connect(dbpath)
     init_sql = """
     CREATE TABLE infob (
       id integer primary key autoincrement,
@@ -32,7 +31,6 @@ def init():
 
     conn.executescript(init_sql)
     conn.commit()
-    conn.close()
 
     insert_log('auto', 'Initialized database')
     
@@ -44,7 +42,6 @@ def do_track(fpath, uid, **kwargs):
     # if that fails because the id wasnt unique, prompt for a unique one?
     # or you could just error for now
 
-    conn = sqlite3.connect(dbpath)
     c = conn.cursor()
     sql = 'INSERT INTO infob (alias, path) VALUES (?, ?)'
 
@@ -54,7 +51,6 @@ def do_track(fpath, uid, **kwargs):
         add_tags_to_infob(c, c.lastrowid, kwargs['tags'])
 
     conn.commit()
-    conn.close()
 
     insert_log('auto', 'Started tracking '+fpath+' as '+uid)
 
@@ -85,7 +81,6 @@ def match_partial_alias(cursor, alias):
 
 
 def insert_log(logtype, logtext):
-    conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
     m = re.findall('\[\[([A-Za-z0-9_ ]+)\]\]', logtext)
@@ -122,11 +117,9 @@ def insert_log(logtype, logtext):
         c.execute(sql, (logtype, round(time.time()), logtext))
 
     conn.commit()
-    conn.close()
 
 
 def print_info(alias, **kwargs):
-    conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
     if kwargs.get('iid') != None:
@@ -152,7 +145,6 @@ def print_info(alias, **kwargs):
         print(', '.join([row[2] for row in rows if row[2] != None]))
         print()
 
-    conn.close()
 
 
 def add_tags_to_infob(c, iid, tags):
@@ -174,7 +166,6 @@ def add_tags_to_infob(c, iid, tags):
 
 
 def modify_info(alias, command, **kwargs):
-    conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
     iid = match_partial_alias(c, alias)
@@ -202,12 +193,10 @@ def modify_info(alias, command, **kwargs):
     else:
         pass
 
-    conn.close()
     print_info(alias, iid=iid)
 
 
 def query_objects(criteria):
-    conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
     sql = 'SELECT * FROM infob WHERE alias LIKE ? or path LIKE ?'
@@ -216,13 +205,11 @@ def query_objects(criteria):
     for row in c.execute(sql, (percents, percents)):
         print_info(row[1], iid=row[0])
 
-    conn.close()
 
 
 def query_tags(criteria):
     # we just do one tag only for now. eventually should be able to filter by many
     # also, need to be able to differentiate between exact and partial searching. right now we search partial by default
-    conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
     sql = """
@@ -240,7 +227,6 @@ def query_tags(criteria):
             print_info(row[1], iid=row[0])
             iids.append(row[0])
 
-    conn.close()
 
 
 def query_logs(criteria):
@@ -250,7 +236,6 @@ def query_logs(criteria):
     # 3) date ranges too!
 
     # let's do 1 for now.
-    conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
     sql = 'SELECT timestamp, entry FROM log_entry WHERE entry LIKE ?'
@@ -262,7 +247,6 @@ def query_logs(criteria):
         print(row[1])
         print()
 
-    conn.close()
 
 def query_logs_alias(criteria):
     # only allow one search criterion for now. however we can search in two ways:
@@ -271,7 +255,6 @@ def query_logs_alias(criteria):
     # 3) date ranges too!
 
     # let's do 2 for now.
-    conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
     sql = """SELECT timestamp, entry FROM log_entry 
@@ -286,10 +269,8 @@ def query_logs_alias(criteria):
         print(row[1])
         print()
 
-    conn.close()
 
 def dump():
-    conn = sqlite3.connect(dbpath)
     c = conn.cursor()
 
     tables = ['infob', 'tag', 'tag_infob', 'log_entry', 'infob_log']
@@ -400,7 +381,9 @@ if __name__ == "__main__":
     else:
         ch = commandHandler(sys.argv[1])
         try:
+            conn = sqlite3.connect('slob.sqlite')
             ch.parse_args(sys.argv[2:])
+            conn.close()
         except commandParseException as e:
             print(e.value)
             print_usage()
