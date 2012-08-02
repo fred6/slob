@@ -304,82 +304,79 @@ class commandParseException(Exception):
         self.value = value
 
 
-class commandHandler:
-    def __init__(self, cmd):
-        commands = [['track', 't'],
-                    ['log', 'l'],
-                    ['info', 'i'],
-                    ['query', 'q'],
-                    ['init'],
-                    ['dump']]
+def do_the_thing(cmd, args):
+    commands = [['track', 't'],
+                ['log', 'l'],
+                ['info', 'i'],
+                ['query', 'q'],
+                ['init'],
+                ['dump']]
 
-        self.command = None
+    thiscommand = None
 
-        for c in commands:
-            canon = c[0]
-            for ceq in c:
-                if cmd == ceq:
-                    self.command = canon
+    for c in commands:
+        canon = c[0]
+        for ceq in c:
+            if cmd == ceq:
+                thiscommand = canon
 
+    if thiscommand == None:
+        raise commandParseException("aint no command brah")
+    else:
+        globals()['parse_'+thiscommand](args)
+
+
+def parse_track(args):
+    print(args)
+    if len(args) == 2:
+        do_track(args[0], args[1])
+    elif len(args) > 2:
+        do_track(args[0], args[1], tags=args[2:])
+    else:
+        raise commandParseException('track arguments not valid')
     
-    def parse_args(self, args):
-        if self.command == None:
-            raise commandParseException("aint no command brah")
+def parse_log(args):
+    if len(args) == 1:
+        insert_log('manual', args[0])
+    else:
+        raise commandParseException('log arguments not valid')
+    
+def parse_info(args):
+    if len(args) != 1:
+        if len(args) > 2 and (args[1] in ['t+', 't-']):
+            modify_info(args[0], args[1], tags=args[2:])
+        elif len(args) > 2 and args[1] == 'c':
+            modify_info(args[0], args[1], new_alias=args[2])
         else:
-            getattr(self, "parse_"+self.command)(args)
+            raise commandParseException('info arguments not valid')
+    else:
+        print_info(args[0])
 
-
-    def parse_track(self, args):
-        print(args)
-        if len(args) == 2:
-            do_track(args[0], args[1])
-        elif len(args) > 2:
-            do_track(args[0], args[1], tags=args[2:])
-        else:
-            raise commandParseException('track arguments not valid')
-        
-    def parse_log(self, args):
-        if len(args) == 1:
-            insert_log('manual', args[0])
-        else:
-            raise commandParseException('log arguments not valid')
-        
-    def parse_info(self, args):
-        if len(args) != 1:
-            if len(args) > 2 and (args[1] in ['t+', 't-']):
-                modify_info(args[0], args[1], tags=args[2:])
-            elif len(args) > 2 and args[1] == 'c':
-                modify_info(args[0], args[1], new_alias=args[2])
+def parse_query(args):
+    if len(args) not in [1, 2] or args[0] not in ['o', 't', 'l', 'la', 'lh']:
+        raise commandParseException('query arguments not valid')
+    else:
+        if args[0] == 'o':
+            query_objects(args[1])
+        elif args[0] == 't':
+            query_tags(args[1])
+        elif args[0] == 'l':
+            query_logs(args[1])
+        elif args[0] == 'la':
+            query_logs_alias(args[1])
+        elif args[0] == 'lh':
+            if len(args) == 2:
+                query_logs_history(args[1])
             else:
-                raise commandParseException('info arguments not valid')
-        else:
-            print_info(args[0])
-
-    def parse_query(self, args):
-        if len(args) not in [1, 2] or args[0] not in ['o', 't', 'l', 'la', 'lh']:
-            raise commandParseException('query arguments not valid')
-        else:
-            if args[0] == 'o':
-                query_objects(args[1])
-            elif args[0] == 't':
-                query_tags(args[1])
-            elif args[0] == 'l':
-                query_logs(args[1])
-            elif args[0] == 'la':
-                query_logs_alias(args[1])
-            elif args[0] == 'lh':
-                if len(args) == 2:
-                    query_logs_history(args[1])
-                else:
-                    query_logs_history()
+                query_logs_history()
 
 
 
-    def parse_init(self, args):
-        init()
+def parse_init(args):
+    init()
 
-    def parse_dump(self, args):
-        dump()
+def parse_dump(args):
+    dump()
 
 
 def print_usage():
@@ -400,10 +397,9 @@ if __name__ == "__main__":
         print_usage()
 
     else:
-        ch = commandHandler(sys.argv[1])
         try:
             conn = sqlite3.connect('slob.sqlite')
-            ch.parse_args(sys.argv[2:])
+            do_the_thing(sys.argv[1], sys.argv[2:])
             conn.close()
         except commandParseException as e:
             print(e.value)
