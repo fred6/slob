@@ -36,7 +36,7 @@ def init():
     
 
 
-def do_track(fpath, uid, **kwargs):
+def do_add(fpath, uid, **kwargs):
     # check if the path is legit somehow
     # if so, try to insert.
     # if that fails because the id wasnt unique, prompt for a unique one?
@@ -52,7 +52,7 @@ def do_track(fpath, uid, **kwargs):
 
     conn.commit()
 
-    insert_log('auto', 'Started tracking '+fpath+' as '+uid)
+    insert_log('auto', 'Added '+fpath+' as '+uid)
 
 # take in  partial alias, return iid (after user prompting) or None
 def match_partial_alias(cursor, alias):
@@ -171,9 +171,9 @@ def modify_info(alias, command, **kwargs):
     iid = match_partial_alias(c, alias)
 
     if iid != None:
-        if command == 't+':
+        if command == '+':
             add_tags_to_infob(c, iid, kwargs['tags'])
-        elif command == 't-':
+        elif command == '-':
             for tag in kwargs['tags']:
                 sql = 'SELECT * FROM tag WHERE tag=?'
                 c.execute(sql, (tag,))
@@ -183,7 +183,6 @@ def modify_info(alias, command, **kwargs):
                 c.execute(sql, (iid, tres[0]))
 
         else:
-            print(kwargs['new_alias'])
             sql = 'UPDATE infob SET alias=? WHERE id=?'
             c.execute(sql, (kwargs['new_alias'], iid))
             # so ugly
@@ -305,9 +304,11 @@ class commandParseException(Exception):
 
 
 def do_the_thing(cmd, args):
-    commands = [['track', 't'],
+    commands = [['add', 'a'],
                 ['log', 'l'],
-                ['info', 'i'],
+                ['modt'],
+                ['moda'],
+                ['iview', 'iv'],
                 ['query', 'q'],
                 ['init'],
                 ['dump']]
@@ -326,14 +327,14 @@ def do_the_thing(cmd, args):
         globals()['parse_'+thiscommand](args)
 
 
-def parse_track(args):
+def parse_add(args):
     print(args)
     if len(args) == 2:
-        do_track(args[0], args[1])
+        do_add(args[0], args[1])
     elif len(args) > 2:
-        do_track(args[0], args[1], tags=args[2:])
+        do_add(args[0], args[1], tags=args[2:])
     else:
-        raise commandParseException('track arguments not valid')
+        raise commandParseException('add arguments not valid')
     
 def parse_log(args):
     if len(args) == 1:
@@ -341,26 +342,36 @@ def parse_log(args):
     else:
         raise commandParseException('log arguments not valid')
     
-def parse_info(args):
-    if len(args) != 1:
-        if len(args) > 2 and (args[1] in ['t+', 't-']):
-            modify_info(args[0], args[1], tags=args[2:])
-        elif len(args) > 2 and args[1] == 'c':
-            modify_info(args[0], args[1], new_alias=args[2])
-        else:
-            raise commandParseException('info arguments not valid')
+def parse_modt(args):
+    if len(args) > 2 and (args[1] in ['+', '-']):
+        modify_info(args[0], args[1], tags=args[2:])
     else:
-        print_info(args[0])
+        raise commandParseException('modt arguments not valid')
+
+def parse_moda(args):
+    if len(args) == 2:
+        modify_info(args[0], None, new_alias=args[1])
+    else:
+        raise commandParseException('moda arguments not valid')
+
+
+def parse_iview(args):
+    # no mixing of search by partial alias and tags. either only tags or only  PA
+    tags = [t for t in args if t.startswith(':')]
+    if len(tags) == 0 and len(args) == 1:
+        query_objects(args[0])
+
+    elif len(tags) > 0 and len(tags) == len(args):
+        query_tags(args[1])
+    else:
+        raise commandParseException('iview arguments not valid')
+
 
 def parse_query(args):
-    if len(args) not in [1, 2] or args[0] not in ['o', 't', 'l', 'la', 'lh']:
+    if len(args) not in [1, 2] or args[0] not in ['l', 'la', 'lh']:
         raise commandParseException('query arguments not valid')
     else:
-        if args[0] == 'o':
-            query_objects(args[1])
-        elif args[0] == 't':
-            query_tags(args[1])
-        elif args[0] == 'l':
+        if args[0] == 'l':
             query_logs(args[1])
         elif args[0] == 'la':
             query_logs_alias(args[1])
@@ -381,11 +392,12 @@ def parse_dump(args):
 
 def print_usage():
     usage = {}
-    usage['t']    = 't  <file path> <alias> [<keyword>...]'
-    usage['v']    = 'v   <unique id>'
-    usage['l']    = 'l    <text>'
-    usage['i']    = 'i   [t+ | t- <tag>...] [c <new alias>]'
-    usage['q']    = 'q  [o | t | l | la | lh] <text>'
+    usage['add']    = 'add    <alias> <desc> [<keyword>...]'
+    usage['log']    = 'log    <text>'
+    usage['modt']   = 'modt   <alias> +|- <tag>[...]'
+    usage['moda']   = 'moda   <alias> <new alias>'
+    usage['iview']  = 'iview  [<alias>] [:<tag>]...'
+    usage['query']  = 'query  [l | la | lh] <text>'
     usage['init'] = 'init'
     usage['dump'] = 'dump'
     begin_str = '\nslob.py <command> [<args>]\n\nCommands/options:\n   ' 
